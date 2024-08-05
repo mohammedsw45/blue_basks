@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "corsheaders",
     #Internal Apps
     'account',
+    'section',
 ]
 
 REST_FRAMEWORK = {
