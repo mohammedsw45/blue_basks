@@ -10,6 +10,7 @@ class AddTaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = ['title', 'description','implementation_duration_hours','owner']
 
+# hellow
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
