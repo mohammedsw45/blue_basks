@@ -1,5 +1,5 @@
 from django.db import models
-from section.models import Member
+from section.models import Team,Member
 from django.utils import timezone
 #from django.core.exceptions import ValidationError
 
@@ -21,7 +21,7 @@ class Task(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='To Do')
     begin_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
-    owner = models.ForeignKey(Member, related_name='task_owner', on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, related_name='task_team', on_delete=models.CASCADE)
     viewers = models.ManyToManyField(Member, related_name='task_viewers', blank=True)
 
     def save(self, *args, **kwargs):
