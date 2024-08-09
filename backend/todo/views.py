@@ -1,6 +1,5 @@
-from rest_framework.generics import CreateAPIView,RetrieveAPIView, ListAPIView, UpdateAPIView, DestroyAPIView
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsAdminUser, IsTeamLeader
+from .permissions import IsAdminUser, IsAdminUserOrTeamLeader,IsAdminUserOrTeamLeaderOrTaskViewer
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
@@ -11,30 +10,29 @@ from .serializers import AddStepSerializer,StepSerializer,UpdateStepSerializer
 from .models import Task,Step
 
 # Tasks
-#Create Task -----------------------------------------------------------------------
-class TaskCreateAPIView(CreateAPIView):
+#Create Task 
+class TaskCreateAPIView(generics.CreateAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUserOrTeamLeader]
 
 
-#Get One Task -------------------------------------------------------------------
-class TaskRetrieveAPIView(RetrieveAPIView):
+#Get One Task
+class TaskRetrieveAPIView(generics.RetrieveAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUserOrTeamLeaderOrTaskViewer]
 
-# List Tasks ---------------------------------------------------------------------
-class TaskListAPIView(ListAPIView): 
+# List Tasks (Each task can view it)
+class TaskListAPIView(generics.ListAPIView): 
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
     
     def get(self, request, *args, **kwargs):
         try:       
                 serializer = self.list(request, *args, **kwargs)
-                if serializer.data:
-                    return Response(
+                return Response(
                         {"tasks": serializer.data},
                         status=status.HTTP_200_OK
                     )
@@ -43,23 +41,38 @@ class TaskListAPIView(ListAPIView):
                 {"message": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-
-# Delete Task
-class DestroyTaskView(DestroyAPIView):
-    queryset = Task.objects.all()
+# Get Tasks list for a team (Each task can view it in this team)
+class TeamTaskListAPIView(generics.ListAPIView): 
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated]
 
-    def delete(self, request, *args, **kwargs):
-        Task = self.get_object()
-        self.perform_destroy(Task)
-        return Response({"result":"The Task was deleted"},status=status.HTTP_200_OK)
+    def get_queryset(self):
+        team_id = self.kwargs['team']  # Assuming the team_id is passed in the URL
+        # Get the current user
+        user = self.request.user
+        # Filter tasks by team and where the user is in the viewers
+        return Task.objects.filter(team__id=team_id, viewers__user=user)
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            serializer = TaskSerializer(self.get_queryset(), many=True)
+            return Response(
+                    {"tasks": serializer.data},
+                    status=status.HTTP_200_OK
+                )
+           
+        except Exception as e:
+            return Response(
+                {"message": f"An error occurred: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-class TaskUpdateAPIView(UpdateAPIView):
+# Update Task
+class TaskUpdateAPIView(generics.UpdateAPIView):
     queryset = Task.objects.all()
     serializer_class = UpdateTaskSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUserOrTeamLeaderOrTaskViewer]
+
     def update(self, request, *args, **kwargs):
         Task = self.get_object()
         data = request.data
@@ -86,7 +99,6 @@ class TaskUpdateAPIView(UpdateAPIView):
                 if new_status in ['To Do', 'In Progress', 'Done']:
                     return Response({"Error": "This Task is Cancelled"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Update Task data
         serializer = self.get_serializer(Task, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
@@ -96,26 +108,39 @@ class TaskUpdateAPIView(UpdateAPIView):
             "data": TaskSerializer(Task).data
         }, status=status.HTTP_202_ACCEPTED)
     
+# Delete Task
+class DestroyTaskView(generics.DestroyAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated, IsAdminUserOrTeamLeaderOrTaskViewer]
+
+    def delete(self, request, *args, **kwargs):
+        Task = self.get_object()
+        self.perform_destroy(Task)
+        return Response({"result":"The Task was deleted"},status=status.HTTP_200_OK)
+
+
+    
 
 
 
 
 # Steps
-#Create Step -----------------------------------------------------------------------
-class StepCreateAPIView(CreateAPIView):
+#Create Step 
+class StepCreateAPIView(generics.CreateAPIView):
     queryset = Step.objects.all()
     serializer_class = AddStepSerializer
     permission_classes = [IsAuthenticated]
 
 
-#Get One Step -------------------------------------------------------------------
-class StepRetrieveAPIView(RetrieveAPIView):
+#Get One Step
+class StepRetrieveAPIView(generics.RetrieveAPIView):
     queryset = Step.objects.all()
     serializer_class = StepSerializer
     permission_classes = [IsAuthenticated]
 
-# List Steps ---------------------------------------------------------------------
-class StepListAPIView(ListAPIView): 
+# List Steps 
+class StepListAPIView(generics.ListAPIView): 
     queryset = Step.objects.all()
     serializer_class = StepSerializer
     permission_classes = [IsAuthenticated]
@@ -133,10 +158,16 @@ class StepListAPIView(ListAPIView):
                 {"message": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
+# Update Step
+class StepUpdateAPIView(generics.UpdateAPIView):
+    queryset = Step.objects.all()
+    serializer_class = UpdateStepSerializer
+    permission_classes = [IsAuthenticated]
+
 
 # Delete Step
-class DestroyStepView(DestroyAPIView):
+class DestroyStepView(generics.DestroyAPIView):
     queryset = Step.objects.all()
     serializer_class = StepSerializer
     permission_classes = [IsAuthenticated]
@@ -146,7 +177,3 @@ class DestroyStepView(DestroyAPIView):
         self.perform_destroy(Step)
         return Response({"result":"The Step was deleted"},status=status.HTTP_200_OK)
 
-class StepUpdateAPIView(UpdateAPIView):
-    queryset = Step.objects.all()
-    serializer_class = UpdateStepSerializer
-    permission_classes = [IsAuthenticated]

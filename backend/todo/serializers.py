@@ -2,19 +2,26 @@ from rest_framework import serializers
 from .models import Task, Step
 from django.contrib.auth.models import User
 from section.serializers import MemberSerializer
+from section.models import Member
+from section.serializers import MemberSerializer
 
 
 #Tasks -----------------------------------------------------------------------------
 
 class TaskSerializer(serializers.ModelSerializer):
+    viewers = MemberSerializer(many=True, read_only=True)  # Display viewers as a list of members
+    viewer_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Member.objects.all(), source='viewers', many=True, write_only=True
+    )
+
     class Meta:
         model = Task
-        fields ='__all__'
-  
+        fields = '__all__'
+
     def create(self, validated_data):
-        viewers = validated_data.pop("viewers", [])
+        viewers = validated_data.pop('viewers', [])
         task = Task.objects.create(**validated_data)
-        task.viewers.set(viewers) # Get viewrs Set
+        task.viewers.set(viewers)
         return task
 
 
