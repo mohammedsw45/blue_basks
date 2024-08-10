@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import ProjectCreateAPIView, ProjectListAPIView, ProjectRetrieveAPIView, UpdateProjectAPIView,DestroyProjectView
 from .views import TeamCreateAPIView,TeamListAPIView, TeamRetrieveAPIView, TeamUpdateAPIView, TeamDestroyAPIView
-from .views import MemberCreateAPIView,MemberListAPIView, MemberRetrieveAPIView,UpdateMemberAPIView, DestroyMemberView
+from .views import MemberCreateAPIView,MemberListAPIView, MemberRetrieveAPIView,UpdateMemberAPIView, DestroyMemberView, UserTeamsListAPIView
 
 urlpatterns = [
     #Projects
@@ -24,5 +24,8 @@ urlpatterns = [
     path('members/<str:pk>', MemberRetrieveAPIView.as_view(), name='get_member'),
     path('members/<str:pk>/update/', UpdateMemberAPIView.as_view(), name='update_member'),
     path('members/<str:pk>/delete/', DestroyMemberView.as_view(), name='delete_member'),
+
+
+    path('user/teams/', UserTeamsListAPIView.as_view(), name='user-teams-list'),
 
 ]

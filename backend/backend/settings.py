@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     #Internal Apps
     'account',
     'section',
+    'todo',
 ]
 
 REST_FRAMEWORK = {

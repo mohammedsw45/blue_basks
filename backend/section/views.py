@@ -1,6 +1,6 @@
 from rest_framework import generics
 from .models import Project, Team,Member
-from .serializers import ProjectSerializer, TeamSerializer,AddMemberSerializer,MemberSerializer,UpdateMemberSerializer
+from .serializers import ProjectSerializer, TeamSerializer,UserTeamSerializer, AddMemberSerializer,MemberSerializer,UpdateMemberSerializer
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsAdminUser, IsTeamLeader
 from rest_framework.response import Response
@@ -199,3 +199,14 @@ class DestroyMemberView(generics.DestroyAPIView):
         member = self.get_object()
         self.perform_destroy(member)
         return Response({"result":"The member was deleted"},status=status.HTTP_200_OK)
+
+
+
+class UserTeamsListAPIView(generics.ListAPIView):
+    serializer_class = UserTeamSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        # Use the correct reverse relationship name to filter teams
+        return Team.objects.filter(member__user=user)

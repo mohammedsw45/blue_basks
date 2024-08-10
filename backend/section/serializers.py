@@ -24,24 +24,29 @@ class AddMemberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Member
-        fields = ['id','user', 'is_team_leader','team','added_at', 'updated_at']
+        fields = ['id', 'user', 'is_team_leader', 'team', 'added_at', 'updated_at']
 
     def validate(self, data):
+        user = data.get('user')
         team = data.get('team')
         is_team_leader = data.get('is_team_leader')
+
+        # Check if the user is already a member of the team
+        existing_member = Member.objects.filter(user=user, team=team).exists()
         
+        if existing_member:
+            raise ValidationError({"error": "This user is already a member of this team."})
+
+        # Check if another team leader already exists in the team
         if is_team_leader:
-            # Check if the instance is being updated
             if self.instance:
-                # For updates, ensure that no other team leader exists in the same team, excluding the current instance
                 existing_team_leader = Member.objects.filter(team=team, is_team_leader=True).exclude(id=self.instance.id).first()
             else:
-                # For creation, ensure that no other team leader exists in the same team
                 existing_team_leader = Member.objects.filter(team=team, is_team_leader=True).first()
-            
+
             if existing_team_leader:
-                raise ValidationError({"error":'This team already has a team leader.'})
-        
+                raise ValidationError({"error": "This team already has a team leader."})
+
         return data
 
     def create(self, validated_data):
@@ -144,17 +149,11 @@ class TeamSerializer(serializers.ModelSerializer):
         representation['members'] = MemberSerializer(members, many=True).data
         return representation
     
-# class UpdateTeamSerializer(serializers.ModelSerializer):
-#     members = serializers.SerializerMethodField(method_name="set_members")
+class UserTeamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = ['id', 'name', 'project', 'created_at', 'updated_at']
 
-#     class Meta:
-#         model = Team
-#         fields = ['project', 'name', 'members']
-
-#     def set_members(self, obj):
-#         members = Member.objects.filter(team=obj)
-#         serializer = MemberSerializer(members, many=True)
-#         return serializer.data
 
 #-------------------------------------------------------------------------------------------------------------------------------
 
