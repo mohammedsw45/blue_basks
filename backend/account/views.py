@@ -152,16 +152,27 @@ class ProfileCreateAPIView(CreateAPIView):
         # Set username to email
         serializer.validated_data['username'] = email
         serializer.validated_data['password'] = make_password(password)
-        serializer.save()
+        user =serializer.save()
+
+        phone_number=self.request.data.get('phone_number')
+        
+        profile_photo=self.request.data.get('profile_photo')
+
+        prof = Profile.objects.get(user__email=user)
+        prof.phone_number = phone_number
+        prof.profile_photo = profile_photo
+        prof.save()
+
+        
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
+
         if response.status_code==201:
             prof = Profile.objects.get(user=response.data['id'])
             serializer = ProfileSerializer(prof, many=False)
 
             return Response({
-                "result": "The user is registered successfully",
                 "data": serializer.data
             }, status=status.HTTP_201_CREATED)
           
