@@ -28,7 +28,7 @@ class TaskSerializer(serializers.ModelSerializer):
 class UpdateTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ['title','description','implementation_duration_hours','status']
+        fields = ['title','description','implementation_duration_hours','status', 'viewers']
 
 
 
@@ -37,7 +37,7 @@ class UpdateTaskSerializer(serializers.ModelSerializer):
 class AddStepSerializer(serializers.ModelSerializer):
     class Meta:
         model = Step
-        fields = ['title', 'body','start_time','end_time','status','task']
+        fields = ['title', 'description','start_time','end_time','status','task']
 
 
 class StepSerializer(serializers.ModelSerializer):
@@ -48,6 +48,6 @@ class StepSerializer(serializers.ModelSerializer):
 class UpdateStepSerializer(serializers.ModelSerializer):
     class Meta:
         model = Step
-        fields = ['title','body','status']
+        fields = ['title','description','status']
 
 

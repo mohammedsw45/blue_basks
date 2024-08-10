@@ -45,7 +45,7 @@ class Step(models.Model):
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
-    body = models.TextField()
+    description = models.TextField(null=True, blank=True)
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='To Do')

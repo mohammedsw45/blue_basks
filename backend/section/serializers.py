@@ -149,17 +149,11 @@ class TeamSerializer(serializers.ModelSerializer):
         representation['members'] = MemberSerializer(members, many=True).data
         return representation
     
-# class UpdateTeamSerializer(serializers.ModelSerializer):
-#     members = serializers.SerializerMethodField(method_name="set_members")
+class UserTeamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = ['id', 'name', 'project', 'created_at', 'updated_at']
 
-#     class Meta:
-#         model = Team
-#         fields = ['project', 'name', 'members']
-
-#     def set_members(self, obj):
-#         members = Member.objects.filter(team=obj)
-#         serializer = MemberSerializer(members, many=True)
-#         return serializer.data
 
 #-------------------------------------------------------------------------------------------------------------------------------
 
