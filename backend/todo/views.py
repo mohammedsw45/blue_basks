@@ -9,6 +9,7 @@ from .serializers import TaskSerializer,UpdateTaskSerializer
 from .serializers import AddStepSerializer,StepSerializer,UpdateStepSerializer
 from .models import Task,Step
 from section.models import Member
+from rest_framework.pagination import PageNumberPagination
 
 # Tasks
 #Create Task 
@@ -24,65 +25,83 @@ class TeamTaskRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated, IsViewerOrLeaderOrAdmin]
 
+from rest_framework.pagination import PageNumberPagination
+
+
+class CustomPagination(PageNumberPagination):
+    page_size = 5
+    page_size_query_param = 'page_size'
+    max_page_size = 20
+    page_query_param = 'page'
+
 # List Tasks (All Tasks)
-class TaskListAPIView(generics.ListAPIView): 
+class TaskListAPIView(generics.ListAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
-    
+    pagination_class = CustomPagination  # Use the custom pagination
+
     def get(self, request, *args, **kwargs):
-        try:       
-                serializer = self.list(request, *args, **kwargs)
-                return Response(
-                        {"tasks": serializer.data},
-                        status=status.HTTP_200_OK
-                    )
-        except Exception as e:
-            return Response(
-                {"message": f"An error occurred: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-# Get Tasks list for a team (Each task can view it in this team)
-class TeamTaskListAPIView(generics.ListAPIView): 
-    serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        team_id = self.kwargs['team']
-        user = self.request.user
-
-        # If the user is a superuser, return all tasks for the team
-        if user.is_superuser:
-            return Task.objects.filter(team__id=team_id)
-
-        # Get the member object or return no tasks if the user is not a member
-        member = Member.objects.filter(user=user, team__id=team_id).first()
-        if not member:
-            return Task.objects.none()
-
-        # If the user is a team leader, return all tasks in the team
-        if member.is_team_leader:
-            return Task.objects.filter(team__id=team_id)
-
-        # Regular members can only view tasks where they are listed as viewers
-        return Task.objects.filter(team__id=team_id, viewers__user=user)
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-
-        if queryset.exists():
+        try:
+            queryset = self.get_queryset()
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+            
             serializer = self.get_serializer(queryset, many=True)
             return Response(
                 {"tasks": serializer.data},
                 status=status.HTTP_200_OK
             )
-        else:
+        except Exception as e:
             return Response(
-                {"message": "You do not have permission to view tasks in this team."},
-                status=status.HTTP_403_FORBIDDEN
+                {"message": f"An error occurred: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
             )
+        
 
 
+#List Tasks of ateam
+class TeamTaskListAPIView(generics.ListAPIView):
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination  # Use the custom pagination
+
+    def get_queryset(self):
+        team_id = self.kwargs['team']
+        user = self.request.user
+
+        if user.is_superuser:
+            return Task.objects.filter(team__id=team_id)
+
+        member = Member.objects.filter(user=user, team__id=team_id).first()
+        if not member:
+            return Task.objects.none()
+
+        if member.is_team_leader:
+            return Task.objects.filter(team__id=team_id)
+
+        return Task.objects.filter(team__id=team_id, viewers__user=user)
+
+    def get(self, request, *args, **kwargs):
+        try:
+            queryset = self.get_queryset()
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+            
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(
+                {"tasks": serializer.data},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"message": f"An error occurred: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 
