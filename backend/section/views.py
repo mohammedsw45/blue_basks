@@ -211,3 +211,5 @@ class UserTeamsListAPIView(generics.ListAPIView):
         user = self.request.user
         # Use the correct reverse relationship name to filter teams
         return Team.objects.filter(member__user=user)
+
+

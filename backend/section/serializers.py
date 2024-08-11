@@ -68,7 +68,7 @@ class TeamSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Team
-        fields = ['id', 'project', 'name', 'members']
+        fields = ['id', 'project', 'name','slug', 'color', 'team_picture', 'members']
 
     
     def create(self, validated_data):
@@ -83,7 +83,8 @@ class TeamSerializer(serializers.ModelSerializer):
             )
         
         # Proceed with team creation
-        members = validated_data.pop("members")
+        if 'members' in validated_data:
+            members = validated_data.pop("members", [])
         team = Team.objects.create(**validated_data)
         group_name = f"team_{team.name}"
         group, _ = Group.objects.get_or_create(name=group_name)
@@ -166,7 +167,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     teams = serializers.SerializerMethodField(method_name="get_teams", read_only=True)
     class Meta:
         model = Project
-        fields = ['id','name', 'color','implementation_duration_days','status', 'begin_time', 'end_time', 'created_at', 'updated_at', 'teams']
+        fields = '__all__'#['id','name', 'color','implementation_duration_days','status', 'begin_time', 'end_time', 'created_at', 'updated_at', 'teams']
 
     def get_teams(self, obj):
         teams = Team.objects.filter(project=obj)

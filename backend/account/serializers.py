@@ -45,6 +45,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 
+
 class EditUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
