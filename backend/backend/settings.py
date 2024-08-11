@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'todo',
 ]
 
+AUTH_USER_MODEL = 'account.User'
+
 REST_FRAMEWORK = {
         'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
         'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -177,6 +179,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -185,3 +189,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # External Access
 CORS_ALLOW_ALL_ORIGINS = True
+
+

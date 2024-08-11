@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from .models import Task, Step
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from section.serializers import MemberSerializer
 from section.models import Member
 from section.serializers import MemberSerializer
+from account.models import User
 
 
 #Tasks -----------------------------------------------------------------------------

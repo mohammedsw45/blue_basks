@@ -168,3 +168,6 @@ cython_debug/
 # Do not ignore the migrations folder and the __init__.py file
 !**/migrations/
 !**/migrations/__init__.py
+
+
+media/

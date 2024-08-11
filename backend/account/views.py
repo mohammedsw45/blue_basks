@@ -1,16 +1,15 @@
-from rest_framework.generics import CreateAPIView,RetrieveAPIView, ListAPIView, UpdateAPIView, DestroyAPIView
-from django.contrib.auth.models import User
-from .models import Profile
-from .serializers import AddUserSerializer, SingUpSerializer, ProfileSerializer,EditProfileSerializer,EditUserSerializer, UserSerializer
+from .serializers import SingUpSerializer,EditUserSerializer, AddUserSerializer,ProfileSerializer,EditProfileSerializer
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsAdminUser
+from rest_framework import generics,status,serializers
+from django.contrib.auth.hashers import make_password
 from rest_framework.response import Response
-from rest_framework import status,serializers
+from .permissions import IsAdminUser
+from .models import User,Profile
+
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from django.contrib.auth.hashers import make_password
 
 #Login
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -26,33 +25,41 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 # Register User - (Profile built in)
-class UserCreateAPIView(CreateAPIView):
+class UserCreateAPIView(generics.CreateAPIView):
     serializer_class = SingUpSerializer
     
-
-    def perform_create(self, serializer):
-        email = serializer.validated_data['email']
-        password = serializer.validated_data['password']
-        if User.objects.filter(username=email).exists():
-            raise serializers.ValidationError({"error": "This Email already exists!"})
-        # Set username to email
-        serializer.validated_data['username'] = email
-        serializer.validated_data['password'] = make_password(password)
-        serializer.save()
-
     def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        if response.status_code==201:
-            prof = Profile.objects.get(user=response.data['id'])
-            serializer = ProfileSerializer(prof, many=False)
+        data = request.data
+        email = data['email']
+        password = data['password']
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError({"error": "This Email already exists!"})     
+           
+        data['password'] = make_password(password)
 
-            return Response({
-                "result": "The user is registered successfully",
-                "data": serializer.data
-            }, status=status.HTTP_201_CREATED)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
 
+
+        user = User.objects.get(email=email)
+        phone_number=data['phone_number']
+        profile_photo=data['profile_photo']
+
+        prof = Profile.objects.get(user=user)
+        prof.phone_number = phone_number
+        prof.profile_photo = profile_photo
+        prof.save()
+
+        serializer = ProfileSerializer(prof, many=False)
+
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+    
 # Get Profile
-class ProfileRetrieveAPIView(RetrieveAPIView):
+class ProfileRetrieveAPIView(generics.RetrieveAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
@@ -86,22 +93,32 @@ class ProfileRetrieveAPIView(RetrieveAPIView):
             )       
 
 # Update User  
-class UpdateUserView(UpdateAPIView):
+class UpdateUserView(generics.UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = EditUserSerializer
     permission_classes = [IsAuthenticated]
 
+    
     def update(self, request, *args, **kwargs):
+        requested_data = request.data
         user = self.get_object()
         if user == self.request.user:
-            serializer = self.get_serializer(user, data=request.data, partial=True)
+            serializer = self.get_serializer(user, data=requested_data, partial=True)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
 
+            profile = Profile.objects.get(user = user)
+            if 'phone_number' in requested_data:
+                profile.phone_number = requested_data['phone_number']
+            if 'profile_photo' in requested_data:
+                profile.profile_photo = requested_data['profile_photo']
+            profile.save()
+            
+
+
             # Prepare response data
             response_data = {
-                "result": "Your information was updated successfully",
-                "data": UserSerializer(user).data
+                "data": ProfileSerializer(profile).data
             }
 
             return Response(response_data, status=status.HTTP_202_ACCEPTED)
@@ -112,7 +129,7 @@ class UpdateUserView(UpdateAPIView):
 
 # For Admins
 # Get List Profiles
-class ProfileListAPIView(ListAPIView): 
+class ProfileListAPIView(generics.ListAPIView): 
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
@@ -137,56 +154,74 @@ class ProfileListAPIView(ListAPIView):
                 {"message": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
 # Add New Profile
-class ProfileCreateAPIView(CreateAPIView):
+class ProfileCreateAPIView(generics.CreateAPIView):
     serializer_class = AddUserSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
 
-    
-
-    def perform_create(self, serializer):
-        email = serializer.validated_data['email']
-        password = serializer.validated_data['password']
-        if User.objects.filter(username=email).exists():
-            raise serializers.ValidationError({"error": "This Email already exists!"})
-        # Set username to email
-        serializer.validated_data['username'] = email
-        serializer.validated_data['password'] = make_password(password)
-        serializer.save()
-
     def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        if response.status_code==201:
-            prof = Profile.objects.get(user=response.data['id'])
-            serializer = ProfileSerializer(prof, many=False)
+        data = request.data
+        email = data['email']
+        password = data['password']
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError({"error": "This Email already exists!"})     
+           
+        data['password'] = make_password(password)
 
-            return Response({
-                "result": "The user is registered successfully",
-                "data": serializer.data
-            }, status=status.HTTP_201_CREATED)
-          
-
- 
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
 
 
-# Update Pforle
-class UpdateProfileView(UpdateAPIView):
+
+        user = User.objects.get(email=email)
+        phone_number=data['phone_number']
+        profile_photo=data['profile_photo']
+
+        prof = Profile.objects.get(user=user)
+        prof.phone_number = phone_number
+        prof.profile_photo = profile_photo
+        prof.save()
+
+        serializer = ProfileSerializer(prof, many=False)
+
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+
+    
+# Update Profile
+class UpdateProfileView(generics.UpdateAPIView):
     queryset = Profile.objects.all()
     serializer_class = EditProfileSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
 
-    def perform_update(self, serializer):
-        profile = self.get_object()
 
-        # Check if the user is an admin or the owner of the profile
-        if self.request.user.is_staff:
-            serializer.save()
-        else:
-            # Raise a 403 Forbidden response if the user is neither the owner nor an admin
-            self.permission_denied(self.request, message="You do not have permission to edit this profile.")
+    def update(self, request, *args, **kwargs):
+        requested_data = request.data
+        profile = self.get_object()
+        serializer = self.get_serializer(profile, data=requested_data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        user = profile.user
+
+
+        user_serializer = EditUserSerializer(user, data=requested_data, partial=True)
+        if user_serializer.is_valid():
+            self.perform_update(user_serializer)
+            # Prepare response data
+            response_data = {
+                "data": ProfileSerializer(profile).data
+            }
+            return Response(response_data, status=status.HTTP_202_ACCEPTED)
+          
+    
       
 # Delete Profle       
-class DestroyProfileView(DestroyAPIView):
+class DestroyProfileView(generics.DestroyAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
