@@ -1,5 +1,6 @@
 from rest_framework import serializers, status
-from django.contrib.auth.models import Group,User
+from django.contrib.auth.models import Group
+from account.models import User
 from .models import Project, Team, Member
 from account.serializers import UserSerializer
 from django.core.exceptions import ValidationError

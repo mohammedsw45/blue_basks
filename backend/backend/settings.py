@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'todo',
 ]
 
+AUTH_USER_MODEL = 'account.User'
+
 REST_FRAMEWORK = {
         'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
         'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -187,3 +189,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # External Access
 CORS_ALLOW_ALL_ORIGINS = True
+
+
