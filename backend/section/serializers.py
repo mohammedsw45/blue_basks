@@ -167,7 +167,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     teams = serializers.SerializerMethodField(method_name="get_teams", read_only=True)
     class Meta:
         model = Project
-        fields = '__all__'#['id','name', 'color','implementation_duration_days','status', 'begin_time', 'end_time', 'created_at', 'updated_at', 'teams']
+        fields = '__all__'
 
     def get_teams(self, obj):
         teams = Team.objects.filter(project=obj)
