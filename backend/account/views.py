@@ -43,12 +43,17 @@ class UserCreateAPIView(generics.CreateAPIView):
 
 
         user = User.objects.get(email=email)
-        phone_number=data['phone_number']
-        profile_photo=data['profile_photo']
 
         prof = Profile.objects.get(user=user)
-        prof.phone_number = phone_number
-        prof.profile_photo = profile_photo
+
+        phone_number = data.get('phone_number')
+        if phone_number:
+            prof.phone_number = phone_number
+
+        profile_photo = data.get('profile_photo')
+        if profile_photo:
+            prof.profile_photo = profile_photo
+        
         prof.save()
 
         serializer = ProfileSerializer(prof, many=False)
@@ -162,8 +167,8 @@ class ProfileCreateAPIView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         data = request.data
-        email = data['email']
-        password = data['password']
+        email = data.get('email')
+        password = data.get('password')
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError({"error": "This Email already exists!"})     
            
@@ -173,16 +178,20 @@ class ProfileCreateAPIView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
 
-
-
         user = User.objects.get(email=email)
-        phone_number=data['phone_number']
-        profile_photo=data['profile_photo']
-
         prof = Profile.objects.get(user=user)
-        prof.phone_number = phone_number
-        prof.profile_photo = profile_photo
+
+        phone_number = data.get('phone_number')
+        if phone_number:
+            prof.phone_number = phone_number
+
+        profile_photo = data.get('profile_photo')
+        if profile_photo:
+            prof.profile_photo = profile_photo
+        
         prof.save()
+
+     
 
         serializer = ProfileSerializer(prof, many=False)
 
