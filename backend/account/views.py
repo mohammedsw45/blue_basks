@@ -219,7 +219,7 @@ class UpdateProfileView(generics.UpdateAPIView):
           
     
       
-# Delete Profle       
+# Delete Profile       
 class DestroyProfileView(generics.DestroyAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
