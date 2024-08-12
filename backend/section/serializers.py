@@ -4,6 +4,9 @@ from account.models import User
 from .models import Project, Team, Member
 from account.serializers import UserSerializer
 from django.core.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
+import json
+
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -64,17 +67,16 @@ class UpdateMemberSerializer(serializers.ModelSerializer):
 
 # Team ---------------------------------------------------------------------------------------------------------------------------
 class TeamSerializer(serializers.ModelSerializer):
-    members = serializers.ListField(write_only=True)
+    members = serializers.ListField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = Team
-        fields = ['id', 'project', 'name','slug', 'color', 'team_picture', 'members']
+        fields = ['id', 'project', 'name', 'slug', 'color', 'team_picture', 'members']
 
-    
     def create(self, validated_data):
         # Extract the project
         project = validated_data.get('project')
-        
+
         # Check if the project's status is Done or Cancelled
         if project.status in ['Done', 'Cancelled']:
             raise ValidationError(
@@ -83,8 +85,21 @@ class TeamSerializer(serializers.ModelSerializer):
             )
         
         # Proceed with team creation
-        if 'members' in validated_data:
-            members = validated_data.pop("members", [])
+        members_data = validated_data.pop('members', None)
+
+        # Handle the case where members_data is a string with escaped characters
+        if isinstance(members_data, list) and len(members_data) == 1 and isinstance(members_data[0], str):
+            try:
+                # Decode the nested string and parse as JSON
+                members_data = members_data[0].replace("\\", "")
+                members = json.loads(members_data)
+            except json.JSONDecodeError:
+                raise ValidationError({"Error": "Invalid JSON format for members"})
+        elif members_data is None:
+            members = []
+        else:
+            members = members_data
+
         team = Team.objects.create(**validated_data)
         group_name = f"team_{team.name}"
         group, _ = Group.objects.get_or_create(name=group_name)
@@ -105,9 +120,26 @@ class TeamSerializer(serializers.ModelSerializer):
         return team
     
     def update(self, instance, validated_data):
-        members = validated_data.pop("members")
+        members_data = validated_data.pop('members', None)
+
+        # Handle the case where members_data is a string with escaped characters
+        if isinstance(members_data, list) and len(members_data) == 1 and isinstance(members_data[0], str):
+            try:
+                # Decode the nested string and parse as JSON
+                members_data = members_data[0].replace("\\", "")
+                members = json.loads(members_data)
+            except json.JSONDecodeError:
+                raise ValidationError({"Error": "Invalid JSON format for members"})
+        elif members_data is None:
+            members = []
+        else:
+            members = members_data
+
         instance.project = validated_data.get('project', instance.project)
         instance.name = validated_data.get('name', instance.name)
+        instance.slug = validated_data.get('slug', instance.slug)
+        instance.color = validated_data.get('color', instance.color)
+        instance.team_picture = validated_data.get('team_picture', instance.team_picture)
         instance.save()
 
         group_name = f"team_{instance.name}"
@@ -117,7 +149,15 @@ class TeamSerializer(serializers.ModelSerializer):
 
         # Get the current user IDs of the team members
         current_members = set(instance.member_set.values_list('user_id', flat=True))
+        members_ids = [member["id"] for member in members]
+        
+        # Identify and remove members who are no longer part of the team
+        removed_members = [id for id in current_members if id not in members_ids]
+        for id in removed_members:
+            member = Member.objects.get(user__id=id, team=instance.id)
+            member.delete()
 
+        # Update or add new members
         for member in members:
             user_id = member["id"]
             
@@ -132,6 +172,7 @@ class TeamSerializer(serializers.ModelSerializer):
                 if member_serializer.is_valid(raise_exception=True):
                     member_serializer.save()
             else:
+                # Update existing members
                 member_data = {
                     "is_team_leader": member["is_team_leader"],
                     "team": instance.id
@@ -142,6 +183,7 @@ class TeamSerializer(serializers.ModelSerializer):
                     member_serializer.save()
 
         return instance
+
     
 
 

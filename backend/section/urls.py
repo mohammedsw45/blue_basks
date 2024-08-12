@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import ProjectCreateAPIView, ProjectListAPIView, ProjectRetrieveAPIView, UpdateProjectAPIView,DestroyProjectView
-from .views import TeamCreateAPIView,TeamListAPIView, TeamRetrieveAPIView, TeamUpdateAPIView, TeamDestroyAPIView
-from .views import MemberCreateAPIView,MemberListAPIView, MemberRetrieveAPIView,UpdateMemberAPIView, DestroyMemberView, UserTeamsListAPIView
+from .views import ProjectCreateAPIView, ProjectListAPIView, ProjectRetrieveAPIView, UpdateProjectAPIView,DestroyProjectView # Project
+from .views import TeamCreateAPIView,TeamListAPIView, TeamRetrieveAPIView, TeamUpdateAPIView, TeamDestroyAPIView             # Team
+from .views import MemberCreateAPIView,MemberListAPIView, MemberRetrieveAPIView,UpdateMemberAPIView, DestroyMemberView, UserTeamsListAPIView # Team
 
 urlpatterns = [
     #Projects
@@ -19,13 +19,13 @@ urlpatterns = [
     path('teams/<str:pk>/delete/', TeamDestroyAPIView.as_view(), name='delete_team'), #Delete
 
     #Member
-    path('members/add', MemberCreateAPIView.as_view(), name='add_member'),
-    path('members/', MemberListAPIView.as_view(), name='list_member'),
-    path('members/<str:pk>', MemberRetrieveAPIView.as_view(), name='get_member'),
-    path('members/<str:pk>/update/', UpdateMemberAPIView.as_view(), name='update_member'),
-    path('members/<str:pk>/delete/', DestroyMemberView.as_view(), name='delete_member'),
+    path('members/add', MemberCreateAPIView.as_view(), name='add_member'), #Add
+    path('members/', MemberListAPIView.as_view(), name='list_member'),  #List
+    path('members/<str:pk>', MemberRetrieveAPIView.as_view(), name='get_member'), # Retraive
+    path('members/<str:pk>/update/', UpdateMemberAPIView.as_view(), name='update_member'), # Update
+    path('members/<str:pk>/delete/', DestroyMemberView.as_view(), name='delete_member'), # Delete
 
 
-    path('user/teams/', UserTeamsListAPIView.as_view(), name='user-teams-list'),
+    path('user/teams/', UserTeamsListAPIView.as_view(), name='user_teams_list'), # user's teams list
 
 ]
