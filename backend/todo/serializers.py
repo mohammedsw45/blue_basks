@@ -10,6 +10,7 @@ from account.models import User
 #Tasks -----------------------------------------------------------------------------
 
 class TaskSerializer(serializers.ModelSerializer):
+    steps = serializers.SerializerMethodField(method_name="get_steps", read_only = True)
     viewers = MemberSerializer(many=True, read_only=True)  # Display viewers as a list of members
     viewer_ids = serializers.PrimaryKeyRelatedField(
         queryset=Member.objects.all(), source='viewers', many=True, write_only=True
@@ -24,6 +25,10 @@ class TaskSerializer(serializers.ModelSerializer):
         task = Task.objects.create(**validated_data)
         task.viewers.set(viewers)
         return task
+    def get_steps(self, obj):
+        steps = Step.objects.filter(task=obj)
+        serializer = StepSerializer(steps, many=True)
+        return serializer.data
 
 
 class UpdateTaskSerializer(serializers.ModelSerializer):
