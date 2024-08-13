@@ -30,8 +30,9 @@ class UserCreateAPIView(generics.CreateAPIView):
     
     def create(self, request, *args, **kwargs):
         data = request.data
-        email = data['email']
-        password = data['password']
+        data._mutable = True
+        email = data.get('email')
+        password = data.get('password')
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError({"error": "This Email already exists!"})     
            
@@ -167,6 +168,7 @@ class ProfileCreateAPIView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         data = request.data
+        data._mutable = True
         email = data.get('email')
         password = data.get('password')
         if User.objects.filter(email=email).exists():
