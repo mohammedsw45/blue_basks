@@ -163,11 +163,11 @@ cython_debug/
 
 
 # Ignore all files in migrations folders
-**/migrations/*
+# **/migrations/*
 
 # Do not ignore the migrations folder and the __init__.py file
-!**/migrations/
-!**/migrations/__init__.py
+# !**/migrations/
+# !**/migrations/__init__.py
 
 
 media/
