@@ -16,8 +16,8 @@ class IsAdminUserOrTeamLeader(permissions.BasePermission):
         # Only apply this permission check for POST requests
         # Allow superusers
         if request.user.is_superuser:
-            return True
-        team_id = request.data.get('team')
+                return True
+        team_id = view.kwargs.get('team')
         if team_id:
             try:
                 # Get the team and check if the user is the leader
