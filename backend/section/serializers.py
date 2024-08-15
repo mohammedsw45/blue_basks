@@ -199,7 +199,7 @@ class UserTeamSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Team
-        fields = ['id', 'name', 'project','members', 'created_at', 'updated_at', 'is_team_leader']
+        fields = '__all__'
 
     def get_is_team_leader(self, obj):
         user = self.context['request'].user

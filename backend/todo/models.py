@@ -11,6 +11,7 @@ class Task(models.Model):
         ('In Progress', 'In Progress'),
         ('Done', 'Done'),
         ('Cancelled', 'Cancelled'),
+        ('Archived', 'Archived'),
     )
 
     title = models.CharField(max_length=255)
