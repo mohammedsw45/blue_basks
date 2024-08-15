@@ -195,16 +195,20 @@ class TeamSerializer(serializers.ModelSerializer):
     
 class UserTeamSerializer(serializers.ModelSerializer):
     is_team_leader = serializers.SerializerMethodField()
+    members = serializers.SerializerMethodField()
 
     class Meta:
         model = Team
-        fields = ['id', 'name', 'project', 'created_at', 'updated_at', 'is_team_leader']
+        fields = ['id', 'name', 'project','members', 'created_at', 'updated_at', 'is_team_leader']
 
     def get_is_team_leader(self, obj):
         user = self.context['request'].user
         # Check if the user is a team leader in the specific team
         return Member.objects.filter(team=obj, user=user, is_team_leader=True).exists()
 
+    def get_members(self, obj):
+        members = Member.objects.filter(team=obj)
+        return MemberSerializer(members, many=True, context=self.context).data
 
 #-------------------------------------------------------------------------------------------------------------------------------
 
