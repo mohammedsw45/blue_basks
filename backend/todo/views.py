@@ -109,7 +109,7 @@ class TeamTaskListAPIView(generics.ListAPIView):
 class TaskUpdateAPIView(generics.UpdateAPIView):
     queryset = Task.objects.all()
     serializer_class = UpdateTaskSerializer
-    permission_classes = [IsAuthenticated, IsAdminUserOrTeamLeader]
+    permission_classes = [IsAuthenticated, IsViewerOrLeaderOrAdmin]
 
     def update(self, request, *args, **kwargs):
         Task = self.get_object()

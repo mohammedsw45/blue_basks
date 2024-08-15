@@ -14,21 +14,20 @@ class IsAdminUserOrTeamLeader(permissions.BasePermission):
 
     def has_permission(self, request, view):
         # Only apply this permission check for POST requests
-        if request.method == 'POST':
-            # Allow superusers
-            if request.user.is_superuser:
-                return True
-            team_id = request.data.get('team')
-            if team_id:
-                try:
-                    # Get the team and check if the user is the leader
-                    team = Team.objects.get(id=team_id)
-                    member = Member.objects.get(user=request.user, team=team)
-                    return member.is_team_leader
-                except (Team.DoesNotExist, Member.DoesNotExist):
-                    return False
-        # For other requests, allow them
-        return True
+        # Allow superusers
+        if request.user.is_superuser:
+            return True
+        team_id = request.data.get('team')
+        if team_id:
+            try:
+                # Get the team and check if the user is the leader
+                team = Team.objects.get(id=team_id)
+                member = Member.objects.get(user=request.user, team=team)
+                return member.is_team_leader
+            except (Team.DoesNotExist, Member.DoesNotExist):
+                return False
+        return False
+        
 
 
 class IsViewerOrLeaderOrAdmin(permissions.BasePermission):
