@@ -27,26 +27,30 @@ class MyTokenObtainPairView(TokenObtainPairView):
 # Register User - (Profile built in)
 class UserCreateAPIView(generics.CreateAPIView):
     serializer_class = SingUpSerializer
-    
+
     def create(self, request, *args, **kwargs):
         data = request.data
         data._mutable = True
         email = data.get('email')
         password = data.get('password')
+        
         if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError({"error": "This Email already exists!"})     
-           
-        data['password'] = make_password(password)
-
+            raise serializers.ValidationError({"error": "This Email already exists!"})
+        
+        # Ensure password validation happens before hashing
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
+        
+        # Now hash the password
+        data['password'] = make_password(password)
+        
+        # Save the user with the validated data
         self.perform_create(serializer)
 
-
         user = User.objects.get(email=email)
-
         prof = Profile.objects.get(user=user)
-
+        
+        # Set additional profile data
         phone_number = data.get('phone_number')
         if phone_number:
             prof.phone_number = phone_number
@@ -58,10 +62,11 @@ class UserCreateAPIView(generics.CreateAPIView):
         prof.save()
 
         serializer = ProfileSerializer(prof, many=False)
-
+        
         return Response({
             "data": serializer.data
         }, status=status.HTTP_201_CREATED)
+
 
     
 # Get Profile
@@ -168,21 +173,28 @@ class ProfileCreateAPIView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         data = request.data
-        data._mutable = True
         email = data.get('email')
         password = data.get('password')
-        if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError({"error": "This Email already exists!"})     
-           
-        data['password'] = make_password(password)
 
+        # Check if the email already exists
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError({"error": "This Email already exists!"})
+
+        # Validate the data before hashing the password
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
+
+        # Hash the password after validation
+        data['password'] = make_password(password)
+
+        # Perform the creation
         self.perform_create(serializer)
 
+        # Fetch the created user and associated profile
         user = User.objects.get(email=email)
         prof = Profile.objects.get(user=user)
 
+        # Set additional profile data
         phone_number = data.get('phone_number')
         if phone_number:
             prof.phone_number = phone_number
@@ -190,13 +202,11 @@ class ProfileCreateAPIView(generics.CreateAPIView):
         profile_photo = data.get('profile_photo')
         if profile_photo:
             prof.profile_photo = profile_photo
-        
+
         prof.save()
 
-     
-
+        # Serialize the profile and return the response
         serializer = ProfileSerializer(prof, many=False)
-
         return Response({
             "data": serializer.data
         }, status=status.HTTP_201_CREATED)
@@ -231,13 +241,18 @@ class UpdateProfileView(generics.UpdateAPIView):
           
     
       
-# Delete Profile       
+# Delete Profile          
 class DestroyProfileView(generics.DestroyAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
 
+    def perform_destroy(self, instance):
+        user = instance.user
+        user.delete()
+        instance.delete()
+
     def delete(self, request, *args, **kwargs):
         profile = self.get_object()
         self.perform_destroy(profile)
-        return Response({"result":"The profile was deleted"},status=status.HTTP_200_OK)
+        return Response({"result": "The profile and associated user were deleted"}, status=status.HTTP_200_OK)

@@ -51,11 +51,18 @@ class EditUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('first_name', 'last_name','username', 'password')
 
+        extra_kwargs = {
+            'first_name': {'required': True, 'allow_blank': False},
+            'last_name': {'required': True, 'allow_blank': False},
+            'username': {'required': True, 'allow_blank': False},
+            'password': {'required': True, 'allow_blank': False, 'min_length': 8}
+        }
+
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
         instance = super().update(instance, validated_data)
         if password:
-            instance['password']= make_password(password)
+            instance.password= make_password(password)
             instance.save()
         return instance
 
