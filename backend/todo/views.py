@@ -62,7 +62,7 @@ class TaskListAPIView(generics.ListAPIView):
         
 
 
-#List Tasks of ateam
+#List Tasks of a team
 class TeamTaskListAPIView(generics.ListAPIView):
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated]
@@ -103,6 +103,36 @@ class TeamTaskListAPIView(generics.ListAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+#List Tasks of a user
+class UserTaskListAPIView(generics.ListAPIView):
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination  # Use the custom pagination
+
+    def get_queryset(self):
+        members = Member.objects.filter(user=self.request.user)
+        tasks = Task.objects.filter(viewers__in=members).distinct()
+
+        return tasks
+
+    def get(self, request, *args, **kwargs):
+        try:
+            queryset = self.get_queryset()
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+            
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(
+                {"tasks": serializer.data},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"message": f"An error occurred: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 # Update Task

@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import TaskCreateAPIView,TeamTaskRetrieveAPIView,TaskListAPIView,DestroyTaskView,TaskUpdateAPIView
-from .views import TeamTaskListAPIView
+from .views import TeamTaskListAPIView,UserTaskListAPIView
 from .views import StepCreateAPIView,StepListAPIView,StepRetrieveAPIView,StepUpdateAPIView,DestroyStepView
 
 
@@ -11,6 +11,8 @@ urlpatterns = [
     #Tasks
 
     path('tasks/',TaskListAPIView.as_view(),name='get_task_list'), # get task list
+
+    path('user/tasks/', UserTaskListAPIView.as_view(), name='user_task_list'), # Get User Tasks
 
 
 
