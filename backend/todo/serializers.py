@@ -43,7 +43,18 @@ class UpdateTaskSerializer(serializers.ModelSerializer):
 class AddStepSerializer(serializers.ModelSerializer):
     class Meta:
         model = Step
-        fields = ['title', 'description','status','task']
+        fields = ['title', 'description', 'status', 'task']
+
+    def validate(self, attrs):
+        task = attrs.get('task')
+
+        # Check if the task status is 'Done' or 'Cancelled'
+        if task.status in ['Done', 'Cancelled', 'Archived']:
+            raise serializers.ValidationError(
+                f"Cannot add a step to a task that is {task.status}"
+            )
+        
+        return attrs
 
 
 class StepSerializer(serializers.ModelSerializer):

@@ -8,8 +8,10 @@ from rest_framework import generics
 from .serializers import TaskSerializer,UpdateTaskSerializer
 from .serializers import AddStepSerializer,StepSerializer,UpdateStepSerializer
 from .models import Task,Step
-from section.models import Member
+from section.models import Team,Member
 from rest_framework.pagination import PageNumberPagination
+from rest_framework import serializers
+from django.db.models import Q
 
 # Tasks
 #Create Task 
@@ -17,6 +19,18 @@ class TaskCreateAPIView(generics.CreateAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated, IsAdminUserOrTeamLeader]
+
+    def perform_create(self, serializer):
+        id = self.kwargs.get('team')  # Get the team slug from the URL
+        team = Team.objects.get(id=id)
+        
+
+        # Check if the team is active before creating the task
+        if not team.is_active:
+            raise serializers.ValidationError({"team": "Cannot add a task to an inactive team."})
+
+        # Pass the team instance to the serializer's save method
+        serializer.save(team=team)
 
 
 #Get One Task
@@ -175,6 +189,11 @@ class TaskUpdateAPIView(generics.UpdateAPIView):
         serializer = self.get_serializer(Task, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
+        
+        task = self.get_object()
+
+        if task.status in ['Done', 'Cancelled']:
+            task.task_steps.filter(~Q(status='Finished')).update(status='Cancelled')
 
         return Response({
             "result": "Your information was updated successfully",

@@ -42,6 +42,7 @@ class Step(models.Model):
         ('To Do', 'To Do'),
         ('Started', 'Started'),
         ('Finished', 'Finished'),
+        ('Cancelled', 'Cancelled')
     )
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="task_steps")
@@ -57,7 +58,7 @@ class Step(models.Model):
             self.end_time = None
         elif self.status == 'Started' and not self.start_time:
             self.start_time = timezone.now()
-        elif self.status == 'Finished':
+        elif self.status in ['Finished', 'Cancelled']:
             if self.start_time and not self.end_time:
                 self.end_time = timezone.now()
         super().save(*args, **kwargs)
