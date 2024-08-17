@@ -34,12 +34,13 @@ class Project(models.Model):
         return self.name
 
 class Team(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='project_teams')
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, max_length=255, blank=True)
     color = models.CharField(max_length=50)
     team_picture = models.ImageField(upload_to='team_pictures/', blank=True, null=True)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True,  related_name='team_group')
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -52,7 +53,8 @@ class Team(models.Model):
 class Member(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='members_user')
     is_team_leader = models.BooleanField(default=False)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team_members")
+    is_active = models.BooleanField(default=True)
     added_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

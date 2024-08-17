@@ -6,6 +6,8 @@ from rest_framework.response import Response
 from .models import Project, Team,Member
 from rest_framework import generics
 from rest_framework import status
+from django.db.models import Q
+
 
 
 
@@ -64,6 +66,23 @@ class UpdateProjectAPIView(generics.UpdateAPIView):
         serializer = self.get_serializer(project, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
+
+        project = self.get_object()
+        if project.status in ['Done', 'Cancelled']:
+            project.project_teams.update(is_active=False)
+
+            # Update all members in the teams' is_active field
+            for team in project.project_teams.all():
+                team.team_members.update(is_active=False)
+
+            tasks = team.team_tasks.filter(~Q(status='Done') & ~Q(status='Archived'))
+            tasks.update(status='Cancelled')
+
+            for task in tasks:
+                task.task_steps.update(status='Finished')
+
+
+
 
         return Response({
             "result": "Your information was updated successfully",

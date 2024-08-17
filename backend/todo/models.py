@@ -22,7 +22,7 @@ class Task(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='To Do')
     begin_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
-    team = models.ForeignKey(Team, related_name='task_team', on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, related_name='team_tasks', on_delete=models.CASCADE)
     viewers = models.ManyToManyField(Member, related_name='task_viewers', blank=True)
 
     def save(self, *args, **kwargs):
@@ -44,7 +44,7 @@ class Step(models.Model):
         ('Finished', 'Finished'),
     )
 
-    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="task_steps")
     title = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
     start_time = models.DateTimeField(null=True, blank=True)

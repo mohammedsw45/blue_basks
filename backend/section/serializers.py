@@ -21,7 +21,7 @@ class MemberSerializer(serializers.ModelSerializer):
     user = UserSerializer()
     class Meta:
         model = Member
-        fields = ['id','user', 'is_team_leader','team','added_at', 'updated_at']
+        fields = ['id','user', 'is_team_leader','team','is_active','added_at', 'updated_at']
 
 
 class AddMemberSerializer(serializers.ModelSerializer):
@@ -34,7 +34,12 @@ class AddMemberSerializer(serializers.ModelSerializer):
         user = data.get('user')
         team = data.get('team')
         is_team_leader = data.get('is_team_leader')
-
+        
+        if not team.is_active:
+            raise ValidationError(
+                {"Error": f"The team is not active"},
+                code=status.HTTP_403_FORBIDDEN
+            )
         # Check if the user is already a member of the team
         existing_member = Member.objects.filter(user=user, team=team).exists()
         
@@ -61,7 +66,7 @@ class AddMemberSerializer(serializers.ModelSerializer):
 class UpdateMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
-        fields = ['is_team_leader','team']
+        fields = ['is_team_leader','team', 'is_active']
 #-------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -71,7 +76,7 @@ class TeamSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Team
-        fields = ['id', 'project', 'name', 'slug', 'color', 'team_picture', 'members']
+        fields = ['id', 'project', 'name', 'slug', 'color', 'team_picture','is_active', 'members']
 
     def create(self, validated_data):
         # Extract the project
@@ -104,6 +109,7 @@ class TeamSerializer(serializers.ModelSerializer):
         group_name = f"team_{team.name}"
         group, _ = Group.objects.get_or_create(name=group_name)
         team.group = group
+        team.is_active = True
         team.save()
 
         # Create members for the team
@@ -120,6 +126,12 @@ class TeamSerializer(serializers.ModelSerializer):
         return team
     
     def update(self, instance, validated_data):
+
+        if not instance.is_active:
+            raise ValidationError(
+                {"Error": f"Cannot Edit this team"},
+                code=status.HTTP_403_FORBIDDEN
+            )
         members_data = validated_data.pop('members', None)
 
         # Handle the case where members_data is a string with escaped characters
