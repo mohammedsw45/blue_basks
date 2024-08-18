@@ -40,14 +40,14 @@ class UserCreateAPIView(generics.CreateAPIView):
         # Ensure password validation happens before hashing
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        
-        # Now hash the password
-        data['password'] = make_password(password)
-        
-        # Save the user with the validated data
-        self.perform_create(serializer)
 
-        user = User.objects.get(email=email)
+        # Hash the password
+        data['password'] = make_password(password)
+        serializer.validated_data['password'] = data['password']
+        
+        # Create the user with the validated data
+        user = User.objects.create(**serializer.validated_data)
+
         prof = Profile.objects.get(user=user)
         
         # Set additional profile data
@@ -173,6 +173,7 @@ class ProfileCreateAPIView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         data = request.data
+        data._mutable = True
         email = data.get('email')
         password = data.get('password')
 
@@ -184,14 +185,13 @@ class ProfileCreateAPIView(generics.CreateAPIView):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
 
-        # Hash the password after validation
+        # Hash the password
         data['password'] = make_password(password)
-
-        # Perform the creation
-        self.perform_create(serializer)
-
-        # Fetch the created user and associated profile
-        user = User.objects.get(email=email)
+        serializer.validated_data['password'] = data['password']
+        
+        # Create the user with the validated data
+        user = User.objects.create(**serializer.validated_data)
+        
         prof = Profile.objects.get(user=user)
 
         # Set additional profile data

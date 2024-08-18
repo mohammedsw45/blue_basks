@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ProjectCreateAPIView, ProjectListAPIView, ProjectRetrieveAPIView, UpdateProjectAPIView,DestroyProjectView # Project
+from .views import ProjectCreateAPIView, ProjectListAPIView, ProjectRetrieveAPIView, UpdateProjectAPIView,DestroyProjectView,UserProjectListAPIView # Project
 from .views import TeamCreateAPIView,TeamListAPIView, TeamRetrieveAPIView, TeamUpdateAPIView, TeamDestroyAPIView             # Team
 from .views import MemberCreateAPIView,MemberListAPIView, MemberRetrieveAPIView,UpdateMemberAPIView, DestroyMemberView, UserTeamsListAPIView # Team
 
@@ -27,5 +27,6 @@ urlpatterns = [
 
 
     path('user/teams/', UserTeamsListAPIView.as_view(), name='user_teams_list'), # user's teams list
+    path('user/projects/', UserProjectListAPIView.as_view(), name='user_projects_list'), # user's projects list
 
 ]

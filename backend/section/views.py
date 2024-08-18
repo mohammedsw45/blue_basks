@@ -229,3 +229,30 @@ class UserTeamsListAPIView(generics.ListAPIView):
         return Team.objects.filter(member__user=user)
 
 
+
+
+
+#List Projects that User is memeber in a team in it
+class UserProjectListAPIView(generics.ListAPIView):
+    serializer_class = ProjectSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        teams = Team.objects.filter(team_members__user=user, team_members__is_active=True)
+        projects = Project.objects.filter(project_teams__in=teams).distinct()
+        return projects
+
+    def get(self, request, *args, **kwargs):
+        try:
+            queryset = self.get_queryset()
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(
+                {"projects": serializer.data},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"message": f"An error occurred: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
