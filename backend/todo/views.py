@@ -12,6 +12,8 @@ from section.models import Team,Member
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import serializers
 from django.db.models import Q
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import TaskFilter
 
 # Tasks
 #Create Task 
@@ -50,10 +52,15 @@ class CustomPagination(PageNumberPagination):
 
 # List Tasks (All Tasks)
 class TaskListAPIView(generics.ListAPIView):
-    queryset = Task.objects.all()
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
     pagination_class = CustomPagination  # Use the custom pagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TaskFilter
+
+    def get_queryset(self):
+        queryset = Task.objects.all()
+        return queryset
 
     def get(self, request, *args, **kwargs):
         try:
@@ -170,21 +177,29 @@ class TaskUpdateAPIView(generics.UpdateAPIView):
             
 
             if current_status == 'To Do':
-                if new_status == 'Done':
+                if new_status in ['Done', 'Archived']:
                     return Response({"Error": "You should start this Task before marking it as Done"}, status=status.HTTP_400_BAD_REQUEST)
 
             elif current_status == 'In Progress':
                 if new_status == 'To Do':
                     return Response({"Error": "You cannot revert to To Do from In Progress"}, status=status.HTTP_400_BAD_REQUEST)
+            elif current_status == 'In Progress':
+                if new_status == 'Archived':
+                    return Response({"Error": "You should finish this task before archive it"}, status=status.HTTP_400_BAD_REQUEST)
                 
 
             elif current_status == 'Done':
-                if new_status in ['To Do', 'In Progress', '']:
+                if new_status in ['To Do', 'In Progress', 'Cancelled']:
                     return Response({"Error": "This Task is Done"}, status=status.HTTP_400_BAD_REQUEST)
             
             elif current_status == 'Cancelled':
                 if new_status in ['To Do', 'In Progress', 'Done']:
                     return Response({"Error": "This Task is Cancelled"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+            elif current_status == 'Archived':
+                if new_status in ['To Do', 'In Progress', 'Done', 'Cancelled']:
+                    return Response({"Error": "This Task is Archived"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(Task, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
