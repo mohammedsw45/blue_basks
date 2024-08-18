@@ -133,7 +133,6 @@ class TeamSerializer(serializers.ModelSerializer):
                 code=status.HTTP_403_FORBIDDEN
             )
         members_data = validated_data.pop('members', None)
-
         # Handle the case where members_data is a string with escaped characters
         if isinstance(members_data, list) and len(members_data) == 1 and isinstance(members_data[0], str):
             try:
@@ -147,7 +146,7 @@ class TeamSerializer(serializers.ModelSerializer):
         else:
             members = members_data
 
-        instance.project = validated_data.get('project', instance.project)
+       # instance.project = validated_data.get('project', instance.project)
         instance.name = validated_data.get('name', instance.name)
         instance.slug = validated_data.get('slug', instance.slug)
         instance.color = validated_data.get('color', instance.color)
@@ -158,41 +157,41 @@ class TeamSerializer(serializers.ModelSerializer):
         group, _ = Group.objects.get_or_create(name=group_name)
         instance.group = group
         instance.save()
-
-        # Get the current user IDs of the team members
-        current_members = set(instance.member_set.values_list('user_id', flat=True))
-        members_ids = [member["id"] for member in members]
-        
-        # Identify and remove members who are no longer part of the team
-        removed_members = [id for id in current_members if id not in members_ids]
-        for id in removed_members:
-            member = Member.objects.get(user__id=id, team=instance.id)
-            member.delete()
-
-        # Update or add new members
-        for member in members:
-            user_id = member["id"]
+        if members:
+            # Get the current user IDs of the team members
+            current_members = set(instance.team_members.values_list('user_id', flat=True))
+            members_ids = [member["id"] for member in members]
             
-            # Add new members only
-            if user_id not in current_members:
-                member_data = {
-                    "user": member["id"],
-                    "is_team_leader": member["is_team_leader"],
-                    "team": instance.id
-                }
-                member_serializer = AddMemberSerializer(data=member_data)
-                if member_serializer.is_valid(raise_exception=True):
-                    member_serializer.save()
-            else:
-                # Update existing members
-                member_data = {
-                    "is_team_leader": member["is_team_leader"],
-                    "team": instance.id
-                }
-                existing_member = Member.objects.get(user_id=user_id, team=instance)
-                member_serializer = UpdateMemberSerializer(existing_member, data=member_data, partial=True)
-                if member_serializer.is_valid(raise_exception=True):
-                    member_serializer.save()
+            # Identify and remove members who are no longer part of the team
+            removed_members = [id for id in current_members if id not in members_ids]
+            for id in removed_members:
+                member = Member.objects.get(user__id=id, team=instance.id)
+                member.delete()
+
+            # Update or add new members
+            for member in members:
+                user_id = member["id"]
+                
+                # Add new members only
+                if user_id not in current_members:
+                    member_data = {
+                        "user": member["id"],
+                        "is_team_leader": member["is_team_leader"],
+                        "team": instance.id
+                    }
+                    member_serializer = AddMemberSerializer(data=member_data)
+                    if member_serializer.is_valid(raise_exception=True):
+                        member_serializer.save()
+                else:
+                    # Update existing members
+                    member_data = {
+                        "is_team_leader": member["is_team_leader"],
+                        "team": instance.id
+                    }
+                    existing_member = Member.objects.get(user_id=user_id, team=instance)
+                    member_serializer = UpdateMemberSerializer(existing_member, data=member_data, partial=True)
+                    if member_serializer.is_valid(raise_exception=True):
+                        member_serializer.save()
 
         return instance
 

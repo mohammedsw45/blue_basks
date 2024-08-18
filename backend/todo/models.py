@@ -1,9 +1,6 @@
 from django.db import models
-from section.models import Team,Member
+from section.models import Team, Member
 from django.utils import timezone
-#from django.core.exceptions import ValidationError
-
-
 
 class Task(models.Model):
     STATUS_CHOICES = (
@@ -26,17 +23,26 @@ class Task(models.Model):
     viewers = models.ManyToManyField(Member, related_name='task_viewers', blank=True)
 
     def save(self, *args, **kwargs):
-        if self.status == 'In Progress' and not self.begin_time:
-            self.begin_time = timezone.now()
-        elif self.status in ['Done', 'Cancelled'] and not self.end_time:
-            self.end_time = timezone.now()
+        if self.status == 'In Progress':
+            if not self.begin_time:
+                self.begin_time = timezone.now()
+            # Ensure project status is updated
+            if self.team and self.team.project:
+                project = self.team.project
+                if project.status == 'To Do':
+                    project.status = 'In Progress'
+                    project.save()
+        elif self.status in ['Done', 'Cancelled']:
+            if not self.end_time:
+                self.end_time = timezone.now()
+        
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.title 
+        return self.title
 
-    
-    
+
+
 class Step(models.Model):
     STATUS_CHOICES = (
         ('To Do', 'To Do'),
@@ -56,13 +62,17 @@ class Step(models.Model):
         if self.status == 'To Do':
             self.start_time = None
             self.end_time = None
-        elif self.status == 'Started' and not self.start_time:
-            self.start_time = timezone.now()
+        elif self.status == 'Started':
+            if not self.start_time:
+                self.start_time = timezone.now()
+            # Update the related task status to 'In Progress'
+            if self.task.status == 'To Do':
+                self.task.status = 'In Progress'
+                self.task.save()
         elif self.status in ['Finished', 'Cancelled']:
             if self.start_time and not self.end_time:
                 self.end_time = timezone.now()
         super().save(*args, **kwargs)
-    def __str__(self):
-        return self.title + " from "+ self.task.title
-    
 
+    def __str__(self):
+        return f"{self.title} from {self.task.title}"
