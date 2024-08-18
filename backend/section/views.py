@@ -226,8 +226,7 @@ class UserTeamsListAPIView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         # Use the correct reverse relationship name to filter teams
-        return Team.objects.filter(member__user=user)
-
+        return Team.objects.filter(team_members__user=user, team_members__is_active=True)
 
 
 
