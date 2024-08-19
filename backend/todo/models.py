@@ -26,16 +26,9 @@ class Task(models.Model):
         if self.status == 'In Progress':
             if not self.begin_time:
                 self.begin_time = timezone.now()
-            # Ensure project status is updated
-            if self.team and self.team.project:
-                project = self.team.project
-                if project.status == 'To Do':
-                    project.status = 'In Progress'
-                    project.save()
         elif self.status in ['Done', 'Cancelled']:
             if not self.end_time:
                 self.end_time = timezone.now()
-        
         super().save(*args, **kwargs)
 
     def __str__(self):

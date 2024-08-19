@@ -45,29 +45,26 @@ class UpdateProjectAPIView(generics.UpdateAPIView):
             current_status = project.status
             new_status = data['status']
 
-            if current_status == 'To Do':
-                if new_status == 'Done':
-                    return Response({"Error": "You should start this project before marking it as Done"}, status=status.HTTP_400_BAD_REQUEST)
+            if current_status == 'To Do' and new_status == 'Done':
+                return Response({"Error": "You should start this project before marking it as Done"}, status=status.HTTP_400_BAD_REQUEST)
 
-            elif current_status == 'In Progress':
-                if new_status == 'To Do':
-                    return Response({"Error": "You cannot revert to To Do from In Progress"}, status=status.HTTP_400_BAD_REQUEST)
+            if current_status == 'In Progress' and new_status == 'To Do':
+                return Response({"Error": "You cannot revert to To Do from In Progress"}, status=status.HTTP_400_BAD_REQUEST)
                 
-
-            elif current_status == 'Done':
-                if new_status in ['To Do', 'In Progress']:
-                    return Response({"Error": "This Project is Done"}, status=status.HTTP_400_BAD_REQUEST)
+            if current_status == 'Done' and new_status in ['To Do', 'In Progress']:
+                return Response({"Error": "This Project is Done"}, status=status.HTTP_400_BAD_REQUEST)
             
-            elif current_status == 'Cancelled':
-                if new_status in ['To Do', 'In Progress', 'Done']:
-                    return Response({"Error": "This Project is Cancelled"}, status=status.HTTP_400_BAD_REQUEST)
+            if current_status == 'Cancelled' and new_status in ['To Do', 'In Progress', 'Done']:
+                return Response({"Error": "This Project is Cancelled"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Update project data
         serializer = self.get_serializer(project, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        project = self.get_object()
+        project.refresh_from_db()  # Refresh the project instance with updated data
+
+        # If the project status is Done or Cancelled, deactivate associated teams and members, and cancel related tasks
         if project.status in ['Done', 'Cancelled']:
             project.project_teams.update(is_active=False)
 
@@ -75,20 +72,21 @@ class UpdateProjectAPIView(generics.UpdateAPIView):
             for team in project.project_teams.all():
                 team.team_members.update(is_active=False)
 
-            tasks = team.team_tasks.filter(~Q(status='Done') & ~Q(status='Archived'))
-            tasks.update(status='Cancelled')
+                tasks = team.team_tasks.filter(~Q(status='Done') & ~Q(status='Archived'))
 
-            for task in tasks:
-                task.task_steps.update(status='Finished')
+                for task in tasks:
+                    task.status = 'Cancelled'
+                    task.save()
 
-
-
+                    for step in task.task_steps.all():
+                        step.status = 'Cancelled'
+                        step.save()
 
         return Response({
             "result": "Your information was updated successfully",
             "data": ProjectSerializer(project).data
         }, status=status.HTTP_202_ACCEPTED)
-    
+
 
 # Delete Project
 class DestroyProjectView(generics.DestroyAPIView):

@@ -14,6 +14,8 @@ from rest_framework import serializers
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import TaskFilter
+from django.shortcuts import get_object_or_404
+
 
 # Tasks
 #Create Task 
@@ -207,6 +209,13 @@ class TaskUpdateAPIView(generics.UpdateAPIView):
         
         task = self.get_object()
 
+        # Ensure project status is updated
+        if task.team and task.team.project:
+            project = task.team.project
+            if project.status == 'To Do':
+                project.status = 'In Progress'
+                project.save()
+
         if task.status in ['Done', 'Cancelled']:
             task.task_steps.filter(~Q(status='Finished')).update(status='Cancelled')
 
@@ -264,21 +273,25 @@ class StepListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         task_id = self.kwargs['task']  # Assuming the task_id is passed in the URL
+        get_object_or_404(Task, id=task_id)
         return Step.objects.filter(task_id=task_id)
     
     def get(self, request, *args, **kwargs):
-        try:       
-                serializer = StepSerializer(self.get_queryset(), many=True)
-                if serializer.data:
-                    return Response(
-                        {"Steps": serializer.data},
-                        status=status.HTTP_200_OK
-                    )
+        try:
+            queryset = self.get_queryset()
+            serializer = StepSerializer(queryset, many=True)
+            
+            return Response(
+                {"Steps": serializer.data},
+                status=status.HTTP_200_OK
+            )
+
         except Exception as e:
             return Response(
                 {"message": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
 
 # Update Step
 class StepUpdateAPIView(generics.UpdateAPIView):
@@ -295,9 +308,21 @@ class StepUpdateAPIView(generics.UpdateAPIView):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
+
+        # Check the status of the updated step
         step_instance = self.object
+        if step_instance.status == 'Started':
+            project = step_instance.task.team.project  # Assuming you have a relationship from Task -> Team -> Project
+
+            # If the project is in "To Do" status, update it to "In Progress"
+            if project.status == 'To Do':
+                project.status = 'In Progress'
+                project.save()
+
+        # Return the updated step data
         response_serializer = StepSerializer(step_instance)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
 
 
 # Delete Step
