@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     #whitenoiss
     "whitenoise.runserver_nostatic",
-    
+
     'django.contrib.staticfiles',
     #External Packages
     'rest_framework',
@@ -146,11 +146,6 @@ DATABASES = {
     }
 }
 
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
