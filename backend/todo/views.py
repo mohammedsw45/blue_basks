@@ -216,7 +216,9 @@ class TaskUpdateAPIView(generics.UpdateAPIView):
                 project.status = 'In Progress'
                 project.save()
 
-        if task.status in ['Done', 'Cancelled']:
+        if task.status in ['Done']:
+            task.task_steps.filter(~Q(status='Finished')).update(status='Finished')
+        if task.status in ['Cancelled']:
             task.task_steps.filter(~Q(status='Finished')).update(status='Cancelled')
 
         return Response({
